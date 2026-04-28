@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bright Motors — Sales Analysis Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a18; }
+  .header { background: #0c1a3a; color: white; padding: 1.5rem 2rem; display: flex; align-items: center; gap: 1rem; }
+  .header-logo { width: 44px; height: 44px; background: #e8a020; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
+  .header-title h1 { font-size: 20px; font-weight: 600; }
+  .header-title p { font-size: 12px; opacity: 0.65; margin-top: 2px; }
+  .nav { background: white; border-bottom: 1px solid #e8e7e2; padding: 0 2rem; display: flex; gap: 4px; overflow-x: auto; }
+  .nav button { padding: 12px 16px; border: none; background: none; font-size: 13px; color: #6b6b67; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.15s; }
+  .nav button.active { color: #0c1a3a; border-bottom-color: #e8a020; font-weight: 500; }
+  .nav button:hover:not(.active) { color: #1a1a18; background: #f5f5f3; }
+  .page { display: none; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .kpi { background: white; border-radius: 10px; padding: 1.25rem; border: 1px solid #e8e7e2; }
+  .kpi-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .kpi-value { font-size: 24px; font-weight: 600; color: #0c1a3a; }
+  .kpi-note { font-size: 11px; color: #999; margin-top: 4px; }
+  .chart-card { background: white; border-radius: 10px; padding: 1.5rem; border: 1px solid #e8e7e2; margin-bottom: 1rem; }
+  .chart-title { font-size: 15px; font-weight: 600; color: #0c1a3a; }
+  .chart-sub { font-size: 12px; color: #888; margin-top: 4px; margin-bottom: 1rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .insight { background: #eff6ff; border-left: 3px solid #185FA5; border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 1rem; font-size: 13px; color: #185FA5; line-height: 1.5; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; font-size: 12px; color: #666; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .ls { width: 10px; height: 10px; border-radius: 2px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } .page { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">BM</div>
+  <div class="header-title">
+    <h1>Bright Motors — Car Sales Analysis</h1>
+    <p>548,400 vehicles &nbsp;·&nbsp; Dataset: Bright Car Sales &nbsp;·&nbsp; Junior Data Analyst Report</p>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="active" onclick="showPage('overview', this)">Overview</button>
+  <button onclick="showPage('makes', this)">Revenue by Make</button>
+  <button onclick="showPage('regional', this)">Regional Performance</button>
+  <button onclick="showPage('trends', this)">Price Trends</button>
+  <button onclick="showPage('margins', this)">Margin Analysis</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview">
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value">$7.6B</div><div class="kpi-note">All vehicles combined</div></div>
+    <div class="kpi"><div class="kpi-label">Vehicles Sold</div><div class="kpi-value">548K</div><div class="kpi-note">Individual transactions</div></div>
+    <div class="kpi"><div class="kpi-label">Avg Selling Price</div><div class="kpi-value">$13,611</div><div class="kpi-note">Per vehicle</div></div>
+    <div class="kpi"><div class="kpi-label">Unique Brands</div><div class="kpi-value">96</div><div class="kpi-note">Makes tracked</div></div>
+    <div class="kpi"><div class="kpi-label">States Covered</div><div class="kpi-value">38</div><div class="kpi-note">US regions</div></div>
+    <div class="kpi"><div class="kpi-label">Top Revenue State</div><div class="kpi-value">Florida</div><div class="kpi-note">$1.15B in sales</div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Top 10 Models by Revenue</div>
+    <div class="chart-sub">Total revenue generated per model (USD millions)</div>
+    <div class="legend">
+      <span><span class="ls" style="background:#185FA5"></span>Top performer</span>
+      <span><span class="ls" style="background:#378ADD"></span>High volume</span>
+      <span><span class="ls" style="background:#1D9E75"></span>Premium</span>
+    </div>
+    <div style="position:relative;width:100%;height:340px;"><canvas id="modelChart"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Units Sold by Body Type</div>
+    <div class="chart-sub">Sedans dominate volume; SUVs command higher prices</div>
+    <div style="position:relative;width:100%;height:260px;"><canvas id="bodyChart"></canvas></div>
+    <div class="insight"><strong>Key Insight:</strong> Sedans account for ~44% of all units, but SUVs achieve a 37% higher average price ($15,906 vs $11,594). Prioritising SUV inventory can significantly increase revenue per unit sold.</div>
+  </div>
+</div>
+
+<!-- MAKES -->
+<div class="page" id="page-makes">
+  <div class="chart-card">
+    <div class="chart-title">Total Revenue by Make — Top 10</div>
+    <div class="chart-sub">Aggregated selling price across all transactions (USD millions)</div>
+    <div style="position:relative;width:100%;height:380px;"><canvas id="makeRevChart"></canvas></div>
+    <div class="insight"><strong>Key Insight:</strong> Ford dominates with $1.36B across 93K units. However, Mercedes-Benz and BMW achieve 48% higher average selling prices with far fewer units — expanding premium inventory is a high-ROI opportunity.</div>
+  </div>
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-title">Avg Selling Price by Make</div>
+      <div class="chart-sub">Premium vs. volume brands</div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="avgPriceChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Units Sold by Make</div>
+      <div class="chart-sub">Volume distribution across brands</div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="unitChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- REGIONAL -->
+<div class="page" id="page-regional">
+  <div class="chart-card">
+    <div class="chart-title">Top 10 States by Total Revenue</div>
+    <div class="chart-sub">Regional sales performance (USD millions)</div>
+    <div style="position:relative;width:100%;height:360px;"><canvas id="stateChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Average Selling Price by State</div>
+    <div class="chart-sub">Reveals premium vs. volume markets</div>
+    <div style="position:relative;width:100%;height:300px;"><canvas id="statePriceChart"></canvas></div>
+    <div class="insight"><strong>Key Insight:</strong> Florida and California together account for 28% of total revenue. Pennsylvania leads on average selling price ($15,976), suggesting a more premium customer base. Tennessee follows at $17,010 — consider targeted inventory allocation for these high-value states.</div>
+  </div>
+</div>
+
+<!-- TRENDS -->
+<div class="page" id="page-trends">
+  <div class="chart-card">
+    <div class="chart-title">Average Selling Price by Manufacture Year</div>
+    <div class="chart-sub">Newer vehicles command significantly higher prices (2006–2015)</div>
+    <div style="position:relative;width:100%;height:280px;"><canvas id="yearChart"></canvas></div>
+    <div class="insight"><strong>Key Insight:</strong> Average price grows 4.2× from 2006 ($6,190) to 2015 ($25,966). Stocking more recent model-year vehicles is the single most impactful lever for increasing revenue per unit.</div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Avg Selling Price vs. Mileage Band</div>
+    <div class="chart-sub">Price declines sharply as odometer reading increases</div>
+    <div style="position:relative;width:100%;height:260px;"><canvas id="mileageChart"></canvas></div>
+    <div class="insight"><strong>Key Insight:</strong> Vehicles under 30,000 miles command a significant premium. Sourcing low-mileage inventory — especially for newer model years — directly maximises resale value and margin.</div>
+  </div>
+</div>
+
+<!-- MARGINS -->
+<div class="page" id="page-margins">
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">High Margin (&gt;10%)</div><div class="kpi-value">79K</div><div class="kpi-note">14.4% of all stock</div></div>
+    <div class="kpi"><div class="kpi-label">Medium Margin (0–10%)</div><div class="kpi-value">182K</div><div class="kpi-note">33.2% of all stock</div></div>
+    <div class="kpi"><div class="kpi-label">Low Margin (&lt;0%)</div><div class="kpi-value">298K</div><div class="kpi-note">54.4% of all stock</div></div>
+  </div>
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-title">Margin Tier Distribution</div>
+      <div class="chart-sub">Units by performance tier</div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="marginDonut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Avg Price by Vehicle Condition</div>
+      <div class="chart-sub">Higher condition score = stronger margin</div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="condChart"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Automatic vs. Manual Transmission</div>
+    <div class="chart-sub">Market split by transmission type (units sold)</div>
+    <div style="position:relative;width:100%;height:200px;"><canvas id="transChart"></canvas></div>
+    <div class="insight"><strong>Key Insight:</strong> Over 54% of vehicles sell below MMR market reference price. Focus on condition-scored 40–49 vehicles and low-mileage stock for consistent above-market margins. <strong>Recommendation:</strong> Implement a margin floor policy — avoid purchases where projected margin falls below 5%.</div>
+  </div>
+</div>
+
+<script>
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const gc = 'rgba(0,0,0,0.05)';
+const tc = '#888';
+const baseH = (h) => ({ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.x.toFixed(1) + 'M' } } }, scales: { x: { grid: { color: gc }, ticks: { color: tc, font: { size: 11 }, callback: v => '$' + v + 'M' } }, y: { grid: { display: false }, ticks: { color: tc, font: { size: 11 } } } } });
+const baseV = () => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: tc, font: { size: 11 } } }, y: { grid: { color: gc }, ticks: { color: tc, font: { size: 11 } } } } });
+
+new Chart(document.getElementById('modelChart'), { type: 'bar', data: { labels: ['Ford F-150','Nissan Altima','Ford Escape','Ford Fusion','Infiniti G Sedan','Ford Explorer','Toyota Camry','BMW 3 Series','Ford Edge','Chevy Silverado'], datasets: [{ data: [272.7,221.0,165.9,159.9,147.9,140.3,140.2,137.9,110.9,107.3], backgroundColor: ['#185FA5','#1D9E75','#378ADD','#378ADD','#1D9E75','#378ADD','#378ADD','#1D9E75','#85B7EB','#85B7EB'], borderRadius: 4 }] }, options: baseH() });
+new Chart(document.getElementById('bodyChart'), { type: 'bar', data: { labels: ['Sedan','SUV','Minivan','Hatchback','Coupe','Crew Cab','Convertible'], datasets: [{ data: [241332,143844,21363,21380,14602,13280,8652], backgroundColor: ['#185FA5','#1D9E75','#378ADD','#378ADD','#85B7EB','#85B7EB','#85B7EB'], borderRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' units' } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('makeRevChart'), { type: 'bar', data: { labels: ['Ford','Chevrolet','Nissan','Toyota','BMW','Mercedes-Benz','Dodge','Infiniti','Honda','Lexus'], datasets: [{ data: [1360.3,721.0,633.3,488.4,444.3,370.1,344.1,312.5,297.6,240.6], backgroundColor: ['#185FA5','#85B7EB','#85B7EB','#85B7EB','#1D9E75','#1D9E75','#85B7EB','#1D9E75','#85B7EB','#1D9E75'], borderRadius: 4 }] }, options: baseH() });
+new Chart(document.getElementById('avgPriceChart'), { type: 'bar', data: { labels: ['M-Benz','BMW','Infiniti','Lexus','Audi','Cadillac','Acura','Lincoln'], datasets: [{ data: [21591,21442,20417,20286,18900,16200,15100,14800], backgroundColor: '#1D9E75', borderRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.y.toLocaleString() } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('unitChart'), { type: 'bar', data: { labels: ['Ford','Chevy','Nissan','Toyota','Dodge','Honda','Hyundai','BMW'], datasets: [{ data: [93553,60197,53946,39871,30708,27206,21816,20719], backgroundColor: '#378ADD', borderRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' units' } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('stateChart'), { type: 'bar', data: { labels: ['Florida','California','Pennsylvania','Texas','Georgia','New Jersey','Tennessee','Illinois','Ohio','Missouri'], datasets: [{ data: [1151.1,1061.1,861.2,606.5,448.9,378.1,355.4,347.3,310.8,231.6], backgroundColor: ['#185FA5','#185FA5','#378ADD','#378ADD','#85B7EB','#85B7EB','#85B7EB','#85B7EB','#B5D4F4','#B5D4F4'], borderRadius: 4 }] }, options: baseH() });
+new Chart(document.getElementById('statePriceChart'), { type: 'bar', data: { labels: ['TN','PA','IL','OH','MO','CA','NJ','FL','GA','TX'], datasets: [{ data: [17010,15976,14792,14407,14466,14506,13609,13877,12919,13210], backgroundColor: '#5DCAA5', borderRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.y.toLocaleString() } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('yearChart'), { type: 'line', data: { labels: ['2006','2007','2008','2009','2010','2011','2012','2013','2014','2015'], datasets: [{ data: [6190,8022,9508,10462,12412,15852,16654,17477,20090,25966], borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', fill: true, tension: 0.4, pointBackgroundColor: '#185FA5', pointRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.y.toLocaleString() } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('mileageChart'), { type: 'line', data: { labels: ['0-10k','10-20k','20-30k','30-40k','40-50k','50-60k','60-70k','70-80k','80-90k','90-100k','100-150k'], datasets: [{ data: [28500,22100,19800,17200,15300,13800,12400,11200,10100,9300,7400], borderColor: '#D85A30', backgroundColor: 'rgba(216,90,48,0.07)', fill: true, tension: 0.4, pointBackgroundColor: '#D85A30', pointRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.y.toLocaleString() } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('marginDonut'), { type: 'doughnut', data: { labels: ['Low Margin','Medium Margin','High Margin'], datasets: [{ data: [297638,182140,79021], backgroundColor: ['#E24B4A','#EF9F27','#1D9E75'], borderWidth: 2, borderColor: 'white' }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 16 } }, tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() + ' units' } } } } });
+new Chart(document.getElementById('condChart'), { type: 'bar', data: { labels: ['1–9','10–19','20–29','30–39','40–49'], datasets: [{ data: [4200,7800,11500,14200,22800], backgroundColor: ['#B5D4F4','#85B7EB','#378ADD','#185FA5','#1D9E75'], borderRadius: 4 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.y.toLocaleString() + ' avg price' } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } } } } });
+new Chart(document.getElementById('transChart'), { type: 'bar', data: { labels: ['Automatic','Manual'], datasets: [{ data: [461200,87200], backgroundColor: ['#185FA5','#5DCAA5'], borderRadius: 6 }] }, options: { ...baseV(), plugins: { ...baseV().plugins, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' units' } } }, scales: { ...baseV().scales, y: { ...baseV().scales.y, ticks: { color: tc, font: { size: 11 }, callback: v => (v/1000).toFixed(0) + 'k' } } } } });
+</script>
+</body>
+</html>
